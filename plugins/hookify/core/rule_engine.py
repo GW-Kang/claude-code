@@ -158,7 +158,9 @@ class RuleEngine:
         # Extract the field value to check
         field_value = self._extract_field(condition.field, tool_name, tool_input, input_data)
         if field_value is None:
-            return False
+            # A missing field trivially does not contain the pattern; otherwise an
+            # omitted optional argument (e.g. Bash `description`) would bypass the rule.
+            return condition.operator == 'not_contains'
 
         # Apply operator
         operator = condition.operator
