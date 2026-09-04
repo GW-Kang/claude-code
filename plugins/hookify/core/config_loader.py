@@ -206,9 +206,27 @@ def load_rules(event: Optional[str] = None) -> List[Rule]:
     """
     rules = []
 
-    # Find all hookify.*.local.md files
-    pattern = os.path.join('.claude', 'hookify.*.local.md')
-    files = glob.glob(pattern)
+    # Find all hookify.*.local.md files. The hook process cwd can drift to a
+    # subdirectory (e.g. after a `cd` in a shell tool), so resolve the project
+    # root explicitly: CLAUDE_PROJECT_DIR first, then walk up from cwd until a
+    # directory containing .claude/hookify.*.local.md is found.
+    files = []
+    candidates = []
+    env_root = os.environ.get('CLAUDE_PROJECT_DIR')
+    if env_root:
+        candidates.append(env_root)
+    current = os.getcwd()
+    while True:
+        candidates.append(current)
+        parent = os.path.dirname(current)
+        if parent == current:
+            break
+        current = parent
+    for root in candidates:
+        pattern = os.path.join(root, '.claude', 'hookify.*.local.md')
+        files = glob.glob(pattern)
+        if files:
+            break
 
     for file_path in files:
         try:
